@@ -157,7 +157,7 @@ printer = Printer(t)
 printer.start()
 
 
-# Parsing loop
+# Parsing loop in MAIN THREAD
 while True:
     cmd = getpass.getpass("") # use getpass for no response
 
