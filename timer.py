@@ -6,17 +6,6 @@ _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change 
 _DEFAULT_DUMP_FILE_NAME = "/tmp/dump" # the default file for dumping each timer
 
 
-
-
-
-
-# PROGRAM BEGINS!
-import time
-import threading
-import sys
-import os
-import getpass
-
 def help():
     print """
 timer.py
@@ -28,14 +17,27 @@ eg usage:
 h {enter} : this help 
 d {enter} : dump timer to a file; will append a timestamp!
 fit {enter} : will try to fit console window to size, windows/linux !EXPERIMENTAL!
+ss {enter} : aka super stop stops all timers
 
+# free to replace 1 with the timer you like to change.
 1 {enter} : toggle timer 1
 1s {enter} : set minutes for timer 1
 1n {enter} : set name for timer 1
 1r {enter} : reset timer 1
 
-free to replace 1 with the timer you like to change.
+# the prefix "a" will operate on all timers eg:
+a {enter} : toggle all timers
+as {enter} : set minutes for all timers
+an {enter} : set name for all timers
+ar {enter} : reset all timers
+
 """
+# PROGRAM BEGINS!
+import time
+import threading
+import sys
+import os
+import getpass
 
 # Printer is the Thread that prints out all the information nicely for you
 class Printer(threading.Thread):
@@ -71,6 +73,15 @@ class Timer(threading.Thread):
     
     running = False # Timers not running on startup, should run manually
     seconds = 0
+
+    def suspend(self):
+        self.running = False
+
+    def resume(self):
+        self.running = True
+
+    def toggle(self):
+        self.running= 1 - self.running # this swaps the running variable 
 
     def reset(self):
         self.seconds = 0    
@@ -120,8 +131,6 @@ def dump(t,filename): # dumps all data to given file
             txt+= "%s " % each.getText()
         f.writelines("%s -> %s\n" % (time.ctime(),txt))
         f.close()
-
-
     except all as e:
         print e
     
@@ -139,8 +148,6 @@ def clear():
     elif os.name == "posix":
         #pass        
         os.system("clear")       
-
-
 
 # Tries to change terminal window size
 fit()
@@ -176,6 +183,32 @@ while True:
             dump(t,new_filename)
         printer.resume()
 
+    if cmd.startswith("ss"):
+        for each in t:
+            each.suspend()
+
+    if cmd.startswith("a"): # operate on all timers
+        if cmd.startswith("ar"): # reset all timers
+            for each in t:
+                each.reset()
+        elif cmd.startswith("an"):
+            printer.suspend()
+            newName=raw_input("Set new name for all: ")
+            if len(newName) != 0:
+                for each in t:
+                    each.setName(newName)
+            printer.resume()
+        elif cmd.startswith("as"):
+            printer.suspend()
+            newVal=raw_input("Set new Value for all: ")
+            if len(newVal) != 0:
+                for each in t:
+                    each.setMinutes(newVal)
+            printer.resume()      
+        elif cmd.startswith("a"):
+            for each in t:
+                each.toggle() # this swaps the running variable 
+        
     for each in t:
         if cmd.startswith("%sr" % each.id): #reset 1r, 2r ... + enter
             each.reset()
@@ -195,8 +228,5 @@ while True:
             printer.resume()            
 
         elif cmd.startswith(str(each.id)): # set running 1,2,3... + enter
-            each.running= 1 - each.running # this swaps the running variable 
-        
-
-    time.sleep(1)
+            each.toggle() # this swaps the running variable 
 
