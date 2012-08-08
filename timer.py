@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+
 # USERCONFIG 
 _TIMERS_TO_SPAN = 9      # How many timers you need? (values between 1-9)
 _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change it later)
 _DEFAULT_DUMP_FILE_NAME = "/tmp/dump" # the default file for dumping each timer
 
-# mode con cols=180 lines=1 # zur info
+
 
 
 
@@ -12,6 +14,7 @@ _DEFAULT_DUMP_FILE_NAME = "/tmp/dump" # the default file for dumping each timer
 import time
 import threading
 import sys
+import os
 import getpass
 
 def help():
@@ -22,10 +25,16 @@ dkrause@onlinestore.de
 
 eg usage:
 
+h {enter} : this help 
+d {enter} : dump timer to a file; will append a timestamp!
+fit {enter} : will try to fit console window to size, windows/linux !EXPERIMENTAL!
+
 1 {enter} : toggle timer 1
 1s {enter} : set minutes for timer 1
 1n {enter} : set name for timer 1
 1r {enter} : reset timer 1
+
+free to replace 1 with the timer you like to change.
 """
 
 # Printer is the Thread that prints out all the information nicely for you
@@ -41,7 +50,8 @@ class Printer(threading.Thread):
             while self.running:        
                 txt=""
                 for each in self.t:
-                    txt+= "%s " % each.getText() 
+                    txt+= "%s " % each.getText()
+                clear()
                 sys.stdout.write("%s\r" % txt)
                 sys.stdout.flush()
                 time.sleep(0.1)
@@ -93,7 +103,7 @@ class Timer(threading.Thread):
         sys.stdout.flush()
 
     def getText(self):
-        return '#%d:%s %d:%d' % (self.id,self.name,(self.seconds/60.0),(self.seconds % 60))
+        return '#%d:%s %02d:%02d' % (self.id,self.name,(self.seconds/60.0),(self.seconds % 60))
 
     def setMinutes(self,minutes):
         self.seconds = int(float(minutes)*60)
@@ -115,7 +125,25 @@ def dump(t,filename): # dumps all data to given file
     except all as e:
         print e
     
-    
+
+def fit(): # try to set geometry
+    if os.name == "nt":
+        os.system("mode con cols=180 lines=1")
+    elif os.name == "posix":
+        #pass        
+        os.system("clear")
+        
+def clear():
+    if os.name == "nt":
+        os.system("cls")
+    elif os.name == "posix":
+        #pass        
+        os.system("clear")       
+
+
+
+# Tries to change terminal window size
+fit()
 
 # SPAWN ALL THE TIMERS
 t = [] # t holds all the timers for the user!
