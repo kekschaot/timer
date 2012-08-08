@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 # USERCONFIG 
-_TIMERS_TO_SPAN = 9      # How many timers you need? (values between 1-9)
+_TIMERS_TO_SPAN = 15      # How many timers you need? (values between 1-9)
 _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change it later)
 _DEFAULT_DUMP_FILE_NAME = "/tmp/dump" # the default file for dumping each timer
-
+_VERTICAL = True # if this is True the timers are shown vertical istead of horizontal
 
 def help():
     print """
@@ -52,7 +52,10 @@ class Printer(threading.Thread):
             while self.running:        
                 txt=""
                 for each in self.t:
-                    txt+= "%s " % each.getText()
+                    if _VERTICAL == True:
+                        txt+= "%s \n" % each.getText()                
+                    else:
+                        txt+= "%s " % each.getText()
                 clear()
                 sys.stdout.write("%s\r" % txt)
                 sys.stdout.flush()
