@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+_VERSION = "0.9 "
 
 # USERCONFIG 
-_TIMERS_TO_SPAN = 9      # How many timers you need? (values between 1-9)
+_TIMERS_TO_SPAWN = 9      # How many timers you need? (values between 1-9)
 _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change it later)
 _DEFAULT_DUMP_FILE_NAME = "/tmp/dump" # the default file for dumping each timer
 _VERTICAL = False # False/True if this is True the timers are shown vertical istead of horizontal
@@ -181,13 +182,17 @@ if ('-h' in sys.argv) or ('--help' in sys.argv) or ('/?' in sys.argv):
     help()
     exit()
 
+if ('-v' in sys.argv) or ('--version' in sys.argv) or ('/v' in sys.argv):
+    print _VERSION
+    exit()
+
 
 # Tries to change terminal window size
 fit()
 
 # SPAWN ALL THE TIMERS
 t = [] # t holds all the timers for the user!
-for each in range(_TIMERS_TO_SPAN): # going to create the timers
+for each in range(_TIMERS_TO_SPAWN): # going to create the timers
     _timer = Timer(_DEFAULT_NAME_OF_TIMERS ,int(each + 1)) # each+1; for easy access via keyboard
     _timer.setDaemon(True) # This will shut down the threads on keyboard interrupt
     _timer.start()
