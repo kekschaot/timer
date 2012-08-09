@@ -9,8 +9,8 @@ _VERTICAL = False # False/True if this is True the timers are shown vertical ist
 _REFRESH_RATE = 0.5 # Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
 
 def help():
-    print """
-timer.py
+    print """timer.py
+Version: %s
 by David Krause
 baradock@gmx.de
 
@@ -24,7 +24,6 @@ d {enter} : dump timer to a file; will append a timestamp!
 l  {enter} : Load last dump from given or defaul file
 
 v  {enter} : Toggle vertical, horizontal view
-
 
 # feel free to replace 1 with the timer you like to change.
 1 {enter} : toggle timer 1
@@ -40,7 +39,7 @@ ar {enter} : reset all timers
 
 ss {enter} : aka super stop stops all timers
 
-"""
+""" % _VERSION
 # PROGRAM BEGINS!
 import time
 import threading
