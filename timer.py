@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-_VERSION = "0.9 "
+_VERSION = "0.9.1"
 
 # USERCONFIG 
-_TIMERS_TO_SPAWN = 9      # How many timers you need? (values between 1-9)
+_TIMERS_TO_SPAWN = 3      # How many timers you need? (values between 1-9)
 _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change it later)
 _DEFAULT_DUMP_FILE_NAME = "/tmp/dump" # the default file for dumping each timer
 _VERTICAL = False # False/True if this is True the timers are shown vertical istead of horizontal
@@ -18,12 +18,15 @@ eg usage:
 
 q {enter} : quit/exits the timer program
 h {enter} : this help 
-d {enter} : dump timer to a file; will append a timestamp!
 fit {enter} : will try to fit console window to size, windows/linux !EXPERIMENTAL!
-ss {enter} : aka super stop stops all timers
+
+d {enter} : dump timer to a file; will append a timestamp!
+l  {enter} : Load last dump from given or defaul file
+
 v  {enter} : Toggle vertical, horizontal view
 
-# free to replace 1 with the timer you like to change.
+
+# feel free to replace 1 with the timer you like to change.
 1 {enter} : toggle timer 1
 1s {enter} : set minutes for timer 1
 1n {enter} : set name for timer 1
@@ -34,6 +37,8 @@ a {enter} : toggle all timers
 as {enter} : set minutes for all timers
 an {enter} : set name for all timers
 ar {enter} : reset all timers
+
+ss {enter} : aka super stop stops all timers
 
 """
 # PROGRAM BEGINS!
@@ -161,6 +166,24 @@ def dump(t,filename): # dumps all data to given file
         print e
     
 
+def load(t,filename): # loads the las dump from spezified file
+    try:
+        f = open(filename,"r")
+        lastline = f.readlines()[-1] # this will get only the last line
+        data = lastline.split(" ")[7:-1] # skip the cdate format and get only the data (in form '#1:noName','00:11',...,...
+
+        i = 0
+        for each in t:
+            each.setName(data[i].split(":")[1]) # get name from string and set it for each timer
+            i += 1
+            each.setMinutes(data[i]) # get value from string and set it
+            i += 1
+    except IndexError:
+        pass # when this except is thrown you have more timers than the file has saved.
+
+    except all as e:
+        print e
+        
 def fit(): # try to set geometry
     if os.name == "nt":
         os.system("mode con cols=180 lines=1")
@@ -224,6 +247,15 @@ while True:
             dump(t,_DEFAULT_DUMP_FILE_NAME)
         else:
             dump(t,new_filename)
+        printer.resume()
+
+    if cmd.startswith("l"):
+        printer.suspend()
+        new_filename = raw_input("load last line from [%s]: " % _DEFAULT_DUMP_FILE_NAME )
+        if len(new_filename) == 0:
+            load(t,_DEFAULT_DUMP_FILE_NAME)
+        else:
+            load(t,new_filename)
         printer.resume()
 
     if cmd.startswith("v"): # toggle vertical
