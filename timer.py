@@ -18,6 +18,7 @@ h {enter} : this help
 d {enter} : dump timer to a file; will append a timestamp!
 fit {enter} : will try to fit console window to size, windows/linux !EXPERIMENTAL!
 ss {enter} : aka super stop stops all timers
+v  {enter} : Toggle vertical, horizontal view
 
 # free to replace 1 with the timer you like to change.
 1 {enter} : toggle timer 1
@@ -42,6 +43,7 @@ import getpass
 # Printer is the Thread that prints out all the information nicely for you
 class Printer(threading.Thread):
     running = True
+    vertical = _VERTICAL
 
     def __init__(self,t=[]):
         threading.Thread.__init__(self)
@@ -52,7 +54,7 @@ class Printer(threading.Thread):
             while self.running:        
                 txt=""
                 for each in self.t:
-                    if _VERTICAL == True:
+                    if self.vertical == True:
                         txt+= "%s \n" % each.getText()                
                     else:
                         txt+= "%s " % each.getText()
@@ -68,6 +70,9 @@ class Printer(threading.Thread):
 
     def resume(self):
         self.running = True
+
+    def toggleVertical(self):
+        self.vertical = 1 - self.vertical
 
 
 class Timer(threading.Thread):
@@ -123,13 +128,17 @@ class Timer(threading.Thread):
         if minutesStr:        
             try:
                 min, sec = minutesStr.split(":")
+
             except ValueError:
                 printer.suspend()
-                print 'illegal format:"%s" should be eg: 10:43'
+                clear()
+                sys.stdout.write('illegal format:"%s" should be eg: 10:43\r')
+                sys.stdout.flush()
                 time.sleep(3.5)
                 printer.resume()
                 return False
             self.seconds = int(float(min)*60)+int(sec) # sets the clock
+            
 
     def getMinutes(self):
         return '%d:%d' % ((self.seconds/60.0),(self.seconds % 60))
@@ -194,6 +203,9 @@ while True:
         else:
             dump(t,new_filename)
         printer.resume()
+
+    if cmd.startswith("v"): # toggle vertical
+        printer.toggleVertical()
 
     if cmd.startswith("ss"):
         for each in t:
