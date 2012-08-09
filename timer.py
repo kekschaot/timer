@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
 # USERCONFIG 
-_TIMERS_TO_SPAN = 15      # How many timers you need? (values between 1-9)
+_TIMERS_TO_SPAN = 3      # How many timers you need? (values between 1-9)
 _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change it later)
 _DEFAULT_DUMP_FILE_NAME = "/tmp/dump" # the default file for dumping each timer
-_VERTICAL = True # if this is True the timers are shown vertical istead of horizontal
+_VERTICAL = False # False/True if this is True the timers are shown vertical istead of horizontal
 
 def help():
     print """
 timer.py
 by David Krause
-dkrause@onlinestore.de
+baradock@gmx.de
 
 eg usage:
 
@@ -119,8 +119,17 @@ class Timer(threading.Thread):
     def getText(self):
         return '#%d:%s %02d:%02d' % (self.id,self.name,(self.seconds/60.0),(self.seconds % 60))
 
-    def setMinutes(self,minutes):
-        self.seconds = int(float(minutes)*60)
+    def setMinutes(self,minutesStr): # sets minutes as you think: 1.30 -> 1Minute 30Seconds
+        if minutesStr:        
+            try:
+                min, sec = minutesStr.split(":")
+            except ValueError:
+                printer.suspend()
+                print 'illegal format:"%s" should be eg: 10:43'
+                time.sleep(3.5)
+                printer.resume()
+                return False
+            self.seconds = int(float(min)*60)+int(sec) # sets the clock
 
     def getMinutes(self):
         return '%d:%d' % ((self.seconds/60.0),(self.seconds % 60))
@@ -179,7 +188,7 @@ while True:
 
     if cmd.startswith("d"):
         printer.suspend()
-        new_filename = raw_input("dump do[%s]: " % _DEFAULT_DUMP_FILE_NAME )
+        new_filename = raw_input("dump to[%s]: " % _DEFAULT_DUMP_FILE_NAME )
         if len(new_filename) == 0:
             dump(t,_DEFAULT_DUMP_FILE_NAME)
         else:
@@ -206,7 +215,10 @@ while True:
             newVal=raw_input("Set new Value for all: ")
             if len(newVal) != 0:
                 for each in t:
-                    each.setMinutes(newVal)
+                    sucess = each.setMinutes(newVal)
+                    if sucess == False:
+                        break
+                    
             printer.resume()      
         elif cmd.startswith("a"):
             for each in t:
