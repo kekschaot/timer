@@ -188,7 +188,7 @@ while True:
 
     if cmd.startswith("d"):
         printer.suspend()
-        new_filename = raw_input("dump to[%s]: " % _DEFAULT_DUMP_FILE_NAME )
+        new_filename = raw_input("dump to [%s]: " % _DEFAULT_DUMP_FILE_NAME )
         if len(new_filename) == 0:
             dump(t,_DEFAULT_DUMP_FILE_NAME)
         else:
