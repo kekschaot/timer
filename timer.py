@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 # USERCONFIG 
-_TIMERS_TO_SPAN = 3      # How many timers you need? (values between 1-9)
+_TIMERS_TO_SPAN = 9      # How many timers you need? (values between 1-9)
 _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change it later)
 _DEFAULT_DUMP_FILE_NAME = "/tmp/dump" # the default file for dumping each timer
 _VERTICAL = False # False/True if this is True the timers are shown vertical istead of horizontal
+_REFRESH_RATE = 0.5 # Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
 
 def help():
     print """
@@ -14,6 +15,7 @@ baradock@gmx.de
 
 eg usage:
 
+q {enter} : quit/exits the timer program
 h {enter} : this help 
 d {enter} : dump timer to a file; will append a timestamp!
 fit {enter} : will try to fit console window to size, windows/linux !EXPERIMENTAL!
@@ -40,6 +42,8 @@ import sys
 import os
 import getpass
 
+shutdown = False # All threads will check this global variable and shuts down when it's set to True
+
 # Printer is the Thread that prints out all the information nicely for you
 class Printer(threading.Thread):
     running = True
@@ -61,7 +65,7 @@ class Printer(threading.Thread):
                 clear()
                 sys.stdout.write("%s\r" % txt)
                 sys.stdout.flush()
-                time.sleep(0.1)
+                time.sleep(_REFRESH_RATE)
         if self.running == False:
             time.sleep(1)            
 
@@ -170,6 +174,14 @@ def clear():
         #pass        
         os.system("clear")       
 
+
+# COMMAND LINE PARSING
+# At first look if help is aquired on startup
+if ('-h' in sys.argv) or ('--help' in sys.argv) or ('/?' in sys.argv):
+    help()
+    exit()
+
+
 # Tries to change terminal window size
 fit()
 
@@ -177,17 +189,22 @@ fit()
 t = [] # t holds all the timers for the user!
 for each in range(_TIMERS_TO_SPAN): # going to create the timers
     _timer = Timer(_DEFAULT_NAME_OF_TIMERS ,int(each + 1)) # each+1; for easy access via keyboard
+    _timer.setDaemon(True) # This will shut down the threads on keyboard interrupt
     _timer.start()
     t.append(_timer)
 
 # START PRINTING THREAD
 printer = Printer(t)
+printer.setDaemon(True) # This will shut down the threads on keyboard interrupt
 printer.start()
 
 
 # Parsing loop in MAIN THREAD
 while True:
     cmd = getpass.getpass("") # use getpass for no response
+
+    if cmd.startswith("q"):
+        exit()
 
     if cmd.startswith("h"):
         printer.suspend()
@@ -242,14 +259,14 @@ while True:
 
         elif cmd.startswith("%sn" % each.id): #set name 1n, 2n ... + enter
             printer.suspend()
-            newName=raw_input("Set new Name for %s: " % each.getName())
+            newName=raw_input("Set new Name for #%d %s: " % (each.id,each.getName()))
             if len(newName) != 0:
                 each.setName(newName)
             printer.resume()
 
         elif cmd.startswith("%ss" % each.id): #set timer 1s, 2s ... + enter
             printer.suspend()
-            newVal=raw_input("Set new Value for %s(%s): " % (each.getName(),each.getMinutes()))
+            newVal=raw_input("Set new Value for #%d %s(%s): " % (each.id,each.getName(),each.getMinutes()))
             if len(newVal) != 0:
                 each.setMinutes(newVal)
             printer.resume()            
@@ -257,3 +274,4 @@ while True:
         elif cmd.startswith(str(each.id)): # set running 1,2,3... + enter
             each.toggle() # this swaps the running variable 
 
+    time.sleep(0.5)
