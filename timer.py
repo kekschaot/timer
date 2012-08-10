@@ -169,7 +169,7 @@ def load(t,filename): # loads the las dump from spezified file
     try:
         f = open(filename,"r")
         lastline = f.readlines()[-1] # this will get only the last line
-        data = lastline.split(" ")[7:-1] # skip the cdate format and get only the data (in form '#1:noName','00:11',...,...
+        data = lastline.split("->")[1].strip().split(" ") # skip the cdate format and get only the data (in form '#1:noName','00:11',...,...
 
         i = 0
         for each in t:
