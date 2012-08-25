@@ -1,14 +1,18 @@
 #!/usr/bin/env python
-_VERSION = "0.9.2"
+_VERSION = "0.9.3"
 
 # USERCONFIG 
 _TIMERS_TO_SPAWN = 3      # How many timers you need? (values between 1-9)
 _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change it later)
-_DEFAULT_DUMP_FILE_NAME = {"posix":"/tmp/timer.dump","nt":"c:/timer.dump"} # the default file for dumping each timer
+_DEFAULT_DUMP_FILE_NAME = {"posix":"/tmp/timer.dump","nt":"c:/timer.dump"} # the default file for dumping each timer posix=linux,unix,etc nt=windows
 _VERTICAL = False # False/True if this is True the timers are shown vertical istead of horizontal
 _REFRESH_RATE = 0.5 # Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
 _AUTO_RESIZE_WINDOW = True # this currently works only on NT / WINDOWS
 
+# this ativates the autodump on every start, stop, renaming and value change
+# on an value change the timers will be dumped twice, bevor and after the value change
+_AUTO_DUMP_ON_CHANGE = True # True aktivates the AUTO DUMP
+_AUTO_DUMP_FILE = {"posix":"/tmp/timer.autodump","nt":"c:/timer.autodump"}
 
 
 helpstr = """timer.py
@@ -102,6 +106,7 @@ class Timer(threading.Thread):
     seconds = 0
 
     def suspend(self):
+        autoDump()
         self.running = False
 
     def resume(self):
@@ -168,7 +173,11 @@ def dump(t,filename): # dumps all data to given file
         f.close()
     except all as e:
         print e
+        exit()
     
+def autoDump():
+    if _AUTO_DUMP_ON_CHANGE == True:
+       dump(t,_AUTO_DUMP_FILE[os.name]) # calls dump with the autodump path
 
 def load(t,filename): # loads the las dump from spezified file
     try:
@@ -246,11 +255,13 @@ printer = Printer(t)
 printer.setDaemon(True) # This will shut down the threads on keyboard interrupt
 printer.start()
 
+# First Autodump on Startup
+autoDump()
 
 # Parsing loop in MAIN THREAD,parse
 while True:
     cmd = getpass.getpass("") # use getpass for no response
-
+    autoDump() # auto dump on EVERY user command (also illegal)
     if cmd.startswith("q"):
         exit()
 
@@ -277,6 +288,7 @@ while True:
         else:
             load(t,new_filename)
         printer.resume()
+        autoDump()
 
     elif cmd.startswith("v"): # toggle vertical
         printer.toggleVertical()
@@ -296,6 +308,7 @@ while True:
                 for each in t:
                     each.setName(newName)
             printer.resume()
+            autoDump()
         elif cmd.startswith("as"):
             printer.suspend()
             newVal=raw_input("Set new Value for all: ")
@@ -304,40 +317,39 @@ while True:
                     sucess = each.setMinutes(newVal)
                     if sucess == False:
                         break
-                    
-            printer.resume()      
+            printer.resume()
+            autoDump()
         elif cmd.startswith("a"):
             for each in t:
                 each.toggle() # this swaps the running variable 
     
     else:
-        printer.suspend()
-        clear()
-        sys.stdout.write('unknown command "%s" try "h {enter}" for help \r' % cmd)
-        sys.stdout.flush()
-        time.sleep(1.0)
-        printer.resume()    
-    
-    
-    for each in t:
-        if cmd.startswith("%sr" % each.id): #reset 1r, 2r ... + enter
-            each.reset()
+        for each in t:
+            if cmd.startswith("%sr" % each.id): #reset 1r, 2r ... + enter
+                each.reset()
 
-        elif cmd.startswith("%sn" % each.id): #set name 1n, 2n ... + enter
-            printer.suspend()
-            newName=raw_input("Set new Name for #%d %s: " % (each.id,each.getName()))
-            if len(newName) != 0:
-                each.setName(newName)
-            printer.resume()
+            elif cmd.startswith("%sn" % each.id): #set name 1n, 2n ... + enter
+                printer.suspend()
+                newName=raw_input("Set new Name for #%d %s: " % (each.id,each.getName()))
+                if len(newName) != 0:
+                    each.setName(newName)
+                printer.resume()
 
-        elif cmd.startswith("%ss" % each.id): #set timer 1s, 2s ... + enter
-            printer.suspend()
-            newVal=raw_input("Set new Value for #%d %s(%s): " % (each.id,each.getName(),each.getMinutes()))
-            if len(newVal) != 0:
-                each.setMinutes(newVal)
-            printer.resume()            
+            elif cmd.startswith("%ss" % each.id): #set timer 1s, 2s ... + enter
+                printer.suspend()
+                newVal=raw_input("Set new Value for #%d %s(%s): " % (each.id,each.getName(),each.getMinutes()))
+                if len(newVal) != 0:
+                    each.setMinutes(newVal)
+                printer.resume()            
 
-        elif cmd.startswith(str(each.id)): # set running 1,2,3... + enter
-            each.toggle() # this swaps the running variable 
+            elif cmd.startswith(str(each.id)): # set running 1,2,3... + enter
+                each.toggle() # this swaps the running variable 
 
+            else: # this is reached when the user input is not recognized
+                printer.suspend()
+                clear()
+                sys.stdout.write('unknown command "%s" try "h {enter}" for help \r' % cmd)
+                sys.stdout.flush()
+                time.sleep(1.0)
+                printer.resume()
     time.sleep(0.5)
