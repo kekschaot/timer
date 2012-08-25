@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-_VERSION = "0.9.1"
+_VERSION = "0.9.2"
 
 # USERCONFIG 
 _TIMERS_TO_SPAWN = 3      # How many timers you need? (values between 1-9)
 _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change it later)
-_DEFAULT_DUMP_FILE_NAME = "/tmp/dump" # the default file for dumping each timer
+_DEFAULT_DUMP_FILE_NAME = {"posix":"/tmp/timer.dump","nt":"c:/timer.dump"} # the default file for dumping each timer
 _VERTICAL = False # False/True if this is True the timers are shown vertical istead of horizontal
 _REFRESH_RATE = 0.5 # Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
+
 
 def help():
     print """timer.py
@@ -25,7 +26,7 @@ l  {enter} : Load last dump from given or defaul file
 
 v  {enter} : Toggle vertical, horizontal view
 
-# feel free to replace 1 with the timer you like to change.
+# feel free to replace 1 with the timer you like to change. eg "6s {enter}" or "57s {enter}"
 1 {enter} : toggle timer 1
 1s {enter} : set minutes for timer 1
 1n {enter} : set name for timer 1
@@ -54,11 +55,11 @@ class Printer(threading.Thread):
     running = True
     vertical = _VERTICAL
 
-    def __init__(self,t=[]):
-        threading.Thread.__init__(self)
+    def __init__(self,t=[]): # t are the timer threads
+        threading.Thread.__init__(self) # needed for threading
         self.t=t
 
-    def run(self):
+    def run(self): # main printing thread
         while True:        
             while self.running:        
                 txt=""
@@ -121,14 +122,9 @@ class Timer(threading.Thread):
         while True:
             if self.running == True:
                 self.seconds = self.seconds + 1
-                #self.text()
                 time.sleep(1)
             else:
                 time.sleep(1)
-
-    def text(self):
-        sys.stdout.write( '%d:%s %s \r\n' % (self.id,self.name,self.seconds ) )
-        sys.stdout.flush()
 
     def getText(self):
         return '#%d:%s %02d:%02d' % (self.id,self.name,(self.seconds/60.0),(self.seconds % 60))
@@ -141,7 +137,7 @@ class Timer(threading.Thread):
             except ValueError:
                 printer.suspend()
                 clear()
-                sys.stdout.write('illegal format:"%s" should be eg: 10:43\r')
+                sys.stdout.write('illegal format:"%s" should be eg: 10:43\r' % minutesStr)
                 sys.stdout.flush()
                 time.sleep(3.5)
                 printer.resume()
@@ -179,7 +175,14 @@ def load(t,filename): # loads the las dump from spezified file
             i += 1
     except IndexError:
         pass # when this except is thrown you have more timers than the file has saved.
-
+    except IOError as e:
+        printer.suspend()
+        clear()
+        sys.stdout.write('Could not load from: %s -> [%s]\r'% (_DEFAULT_DUMP_FILE_NAME[os.name],e) )
+        sys.stdout.flush()
+        time.sleep(3.5)
+        printer.resume()
+     
     except all as e:
         print e
         
@@ -226,45 +229,45 @@ printer.setDaemon(True) # This will shut down the threads on keyboard interrupt
 printer.start()
 
 
-# Parsing loop in MAIN THREAD
+# Parsing loop in MAIN THREAD,parse
 while True:
     cmd = getpass.getpass("") # use getpass for no response
 
     if cmd.startswith("q"):
         exit()
 
-    if cmd.startswith("h"):
+    elif cmd.startswith("h"):
         printer.suspend()
         help()
         getpass.getpass("press enter for exit help")
         printer.resume()
 
-    if cmd.startswith("d"):
+    elif cmd.startswith("d"):
         printer.suspend()
-        new_filename = raw_input("dump to [%s]: " % _DEFAULT_DUMP_FILE_NAME )
+        new_filename = raw_input("dump to [%s]: " % _DEFAULT_DUMP_FILE_NAME[os.name] )
         if len(new_filename) == 0:
-            dump(t,_DEFAULT_DUMP_FILE_NAME)
+            dump(t,_DEFAULT_DUMP_FILE_NAME[os.name])
         else:
             dump(t,new_filename)
         printer.resume()
 
-    if cmd.startswith("l"):
+    elif cmd.startswith("l"):
         printer.suspend()
-        new_filename = raw_input("load last line from [%s]: " % _DEFAULT_DUMP_FILE_NAME )
+        new_filename = raw_input("load last line from [%s]: " % _DEFAULT_DUMP_FILE_NAME[os.name] )
         if len(new_filename) == 0:
-            load(t,_DEFAULT_DUMP_FILE_NAME)
+            load(t,_DEFAULT_DUMP_FILE_NAME[os.name])
         else:
             load(t,new_filename)
         printer.resume()
 
-    if cmd.startswith("v"): # toggle vertical
+    elif cmd.startswith("v"): # toggle vertical
         printer.toggleVertical()
 
-    if cmd.startswith("ss"):
+    elif cmd.startswith("ss"):
         for each in t:
             each.suspend()
 
-    if cmd.startswith("a"): # operate on all timers
+    elif cmd.startswith("a"): # operate on all timers
         if cmd.startswith("ar"): # reset all timers
             for each in t:
                 each.reset()
@@ -288,7 +291,16 @@ while True:
         elif cmd.startswith("a"):
             for each in t:
                 each.toggle() # this swaps the running variable 
-        
+    
+    else:
+        printer.suspend()
+        clear()
+        sys.stdout.write('unknown command "%s" try "h {enter}" for help \r' % cmd)
+        sys.stdout.flush()
+        time.sleep(1.0)
+        printer.resume()    
+    
+    
     for each in t:
         if cmd.startswith("%sr" % each.id): #reset 1r, 2r ... + enter
             each.reset()
