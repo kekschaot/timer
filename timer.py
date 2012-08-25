@@ -9,12 +9,15 @@ _VERTICAL = False # False/True if this is True the timers are shown vertical ist
 _REFRESH_RATE = 0.25 # Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
 _AUTO_RESIZE_WINDOW = True # this currently works only on NT / WINDOWS
 
-# this ativates the autodump on every start, stop, renaming and value change
-# on an value change the timers will be dumped twice, bevor and after the value change
-# HINT hit {enter} in the program with _AUTO_DUMP_ON_CHANGE = True will dump
-# the current state of the timers
+# ativates the autodump on every aktion on the timers.
+# HINT hit {enter} in the program will dump the current state of the timers
 _AUTO_DUMP_ON_CHANGE = True # True aktivates the AUTO DUMP
-_AUTO_DUMP_FILE = {"posix":"/tmp/timer.autodump","nt":"c:/timer.autodump"}
+_AUTO_DUMP_FILE = {"posix":"/tmp/timer.autodump","nt":"c:/timer.autodump"} # dump path
+
+_DEFAULT_HEIGHT= 1 # WINDOWS ONLY ATM
+_DEFAULT_WIDTH =100 # also only M$ Win
+
+
 
 
 helpstr = """timer.py
@@ -218,7 +221,7 @@ def fit(str=""): # try to set geometry, based on given str
             width = max            
             os.system("mode con cols=%d lines=%d" % (width,height))
         else:
-            os.system("mode con cols=180 lines=1")
+            os.system("mode con cols=%d lines=%d" %(_DEFAULT_WIDTH,_DEFAULT_HEIGHT))
 
     elif os.name == "posix":
         pass        
