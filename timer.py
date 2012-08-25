@@ -6,11 +6,13 @@ _TIMERS_TO_SPAWN = 3      # How many timers you need? (values between 1-9)
 _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change it later)
 _DEFAULT_DUMP_FILE_NAME = {"posix":"/tmp/timer.dump","nt":"c:/timer.dump"} # the default file for dumping each timer posix=linux,unix,etc nt=windows
 _VERTICAL = False # False/True if this is True the timers are shown vertical istead of horizontal
-_REFRESH_RATE = 0.5 # Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
+_REFRESH_RATE = 0.25 # Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
 _AUTO_RESIZE_WINDOW = True # this currently works only on NT / WINDOWS
 
 # this ativates the autodump on every start, stop, renaming and value change
 # on an value change the timers will be dumped twice, bevor and after the value change
+# HINT hit {enter} in the program with _AUTO_DUMP_ON_CHANGE = True will dump
+# the current state of the timers
 _AUTO_DUMP_ON_CHANGE = True # True aktivates the AUTO DUMP
 _AUTO_DUMP_FILE = {"posix":"/tmp/timer.autodump","nt":"c:/timer.autodump"}
 
@@ -344,12 +346,4 @@ while True:
 
             elif cmd.startswith(str(each.id)): # set running 1,2,3... + enter
                 each.toggle() # this swaps the running variable 
-
-            else: # this is reached when the user input is not recognized
-                printer.suspend()
-                clear()
-                sys.stdout.write('unknown command "%s" try "h {enter}" for help \r' % cmd)
-                sys.stdout.flush()
-                time.sleep(1.0)
-                printer.resume()
     time.sleep(0.5)
