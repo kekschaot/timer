@@ -46,6 +46,7 @@ an {enter} : set name for all timers
 ar {enter} : reset all timers
 
 ss {enter} : aka super stop stops all timers
+sss {enter} : aka super stop stops all timers and also set default name
 
 """ % _VERSION
 # PROGRAM BEGINS!
@@ -295,7 +296,13 @@ while True:
     elif cmd.startswith("v"): # toggle vertical
         printer.toggleVertical()
 
-    elif cmd.startswith("ss"):
+    elif cmd.startswith("sss"):
+        for each in t:
+            each.reset()
+            each.suspend()
+            each.setName(_DEFAULT_NAME_OF_TIMERS)
+
+    elif cmd.startswith("ss"): # super stop stops all timers
         for each in t:
             each.suspend()
 
@@ -346,4 +353,4 @@ while True:
 
             elif cmd.startswith(str(each.id)): # set running 1,2,3... + enter
                 each.toggle() # this swaps the running variable 
-    time.sleep(0.5)
+    #time.sleep(0.5) # time to sleep between each command
