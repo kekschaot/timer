@@ -7,10 +7,11 @@ _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change 
 _DEFAULT_DUMP_FILE_NAME = {"posix":"/tmp/timer.dump","nt":"c:/timer.dump"} # the default file for dumping each timer
 _VERTICAL = False # False/True if this is True the timers are shown vertical istead of horizontal
 _REFRESH_RATE = 0.5 # Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
+_AUTO_RESIZE_WINDOW = True # this currently works only on NT / WINDOWS
 
 
-def help():
-    print """timer.py
+
+helpstr = """timer.py
 Version: %s
 by David Krause
 baradock@gmx.de
@@ -48,7 +49,13 @@ import sys
 import os
 import getpass
 
+#os.name = "nt" # DEBUG simulate nt
+
 shutdown = False # All threads will check this global variable and shuts down when it's set to True
+
+def help(): # dummy fuction prints the help, and also tries to fit the terminal
+    fit(helpstr)
+    print helpstr
 
 # Printer is the Thread that prints out all the information nicely for you
 class Printer(threading.Thread):
@@ -68,6 +75,8 @@ class Printer(threading.Thread):
                         txt+= "%s \n" % each.getText()                
                     else:
                         txt+= "%s " % each.getText()
+                if _AUTO_RESIZE_WINDOW == True:
+                    fit(txt)
                 clear()
                 sys.stdout.write("%s\r" % txt)
                 sys.stdout.flush()
@@ -165,7 +174,7 @@ def load(t,filename): # loads the las dump from spezified file
     try:
         f = open(filename,"r")
         lastline = f.readlines()[-1] # this will get only the last line
-        data = lastline.split("->")[1].strip().split(" ") # skip the cdate format and get only the data (in form '#1:noName','00:11',...,...
+        data = lastline.split("->")[1].strip().split(" ") # skip the cdate format and get only the data in form '#1:noName','00:11',...,...
 
         i = 0
         for each in t:
@@ -174,7 +183,7 @@ def load(t,filename): # loads the las dump from spezified file
             each.setMinutes(data[i]) # get value from string and set it
             i += 1
     except IndexError:
-        pass # when this except is thrown you have more timers than the file has saved.
+        pass # when this except is thrown you have more timers than the file has saved, but we dont care LOL.
     except IOError as e:
         printer.suspend()
         clear()
@@ -182,22 +191,31 @@ def load(t,filename): # loads the las dump from spezified file
         sys.stdout.flush()
         time.sleep(3.5)
         printer.resume()
-     
     except all as e:
         print e
         
-def fit(): # try to set geometry
+def fit(str=""): # try to set geometry, based on given str
     if os.name == "nt":
-        os.system("mode con cols=180 lines=1")
+        if len(str) != 0:
+            lines = str.split("\n")
+            height = len(lines)
+            max = 0
+            for each in lines:
+                if len(each) > max:
+                    max = len(each)
+            width = max            
+            os.system("mode con cols=%d lines=%d" % (width,height))
+        else:
+            os.system("mode con cols=180 lines=1")
+
     elif os.name == "posix":
-        #pass        
-        os.system("clear")
+        pass        
+        #os.system("clear")
         
 def clear():
     if os.name == "nt":
         os.system("cls")
     elif os.name == "posix":
-        #pass        
         os.system("clear")       
 
 
