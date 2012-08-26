@@ -153,7 +153,7 @@ class Timer(threading.Thread):
     def getText(self):
         return '#%d:%s %02d:%02d' % (self.id,self.name,(self.seconds/60.0),(self.seconds % 60))
 
-    def setMinutes(self,minutesStr): # sets minutes as you think: 1.30 -> 1Minute 30Seconds
+    def setMinutes(self,minutesStr): # sets minutes as you think: 1:30 -> 1Minute 30Seconds
         if minutesStr:        
             try:
                 min, sec = minutesStr.split(":")
@@ -271,17 +271,17 @@ autoDump()
 # Parsing loop in MAIN THREAD,parse
 while True:
     cmd = getpass.getpass("") # use getpass for no response
-    autoDump() # auto dump on EVERY user command (also illegal)
+    autoDump() # auto dump on EVERY user command (also illegal) TODO brainwave aquired
     if cmd.startswith("q"):
         exit()
 
-    elif cmd.startswith("h"):
+    elif cmd.startswith("h"): # display in programm help, timers'll still run 
         printer.suspend()
         help()
         getpass.getpass("press enter for exit help")
         printer.resume()
 
-    elif cmd.startswith("d"):
+    elif cmd.startswith("d"): # dump to given file
         printer.suspend()
         new_filename = raw_input("dump to [%s]: " % _DEFAULT_DUMP_FILE_NAME[os.name] )
         if len(new_filename) == 0:
@@ -290,7 +290,7 @@ while True:
             dump(t,new_filename)
         printer.resume()
 
-    elif cmd.startswith("l"):
+    elif cmd.startswith("l"): # load from the last line
         printer.suspend()
         new_filename = raw_input("load last line from [%s]: " % _DEFAULT_DUMP_FILE_NAME[os.name] )
         if len(new_filename) == 0:

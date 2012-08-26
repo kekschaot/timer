@@ -1,5 +1,7 @@
 timer.py
-Version: %s
+
+
+Small, easy to use, tui python timer for use in service desks and similar  
 by David Krause
 baradock@gmx.de
 
