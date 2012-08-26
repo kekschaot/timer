@@ -7,15 +7,24 @@ _DEFAULT_NAME_OF_TIMERS = "noName" # the default name of the timers (can change 
 _DEFAULT_DUMP_FILE_NAME = {"posix":"/tmp/timer.dump","nt":"c:/timer.dump"} # the default file for dumping each timer posix=linux,unix,etc nt=windows
 _VERTICAL = False # False/True if this is True the timers are shown vertical istead of horizontal
 _REFRESH_RATE = 0.25 # Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
-_AUTO_RESIZE_WINDOW = True # this currently works only on NT / WINDOWS
+_AUTO_RESIZE_WINDOW = False # this currently works only on NT / WINDOWS
 
 # ativates the autodump on every aktion on the timers.
 # HINT hit {enter} in the program will dump the current state of the timers
 _AUTO_DUMP_ON_CHANGE = True # True aktivates the AUTO DUMP
 _AUTO_DUMP_FILE = {"posix":"/tmp/timer.autodump","nt":"c:/timer.autodump"} # dump path
 
+_ERROR_DUMP_FILE = {"posix":"/tmp/timer.autodump","nt":"c:/timer.autodump"}
+
 _DEFAULT_HEIGHT= 1 # WINDOWS ONLY ATM
 _DEFAULT_WIDTH =100 # also only M$ Win
+
+_ACTION_TIMER = False # when this is set to true the default action will be called, else the timer bells visually 
+_DEFAULT_BELL_TIME = 5
+
+def _DEFAULT_ACTION_ON_TIMER_BELL(): # 
+    import os
+    os.system("mplayer /home/david/Musik/vadd1.wav > /dev/null 2> /dev/null &")
 
 helpstr = """timer.py
 Version: %s
@@ -38,6 +47,8 @@ v  {enter} : Toggle vertical, horizontal view
 1s {enter} : set minutes for timer 1
 1n {enter} : set name for timer 1
 1r {enter} : reset timer 1
+
+1i {enter} : reverse timer 1 # if _ACTION_TIMER = True, execute _DEFAULT_ACTION_ON_TIMER_BELL() 
 
 # the prefix "a" will operate on all timers eg:
 a {enter} : toggle all timers
@@ -112,8 +123,12 @@ class Timer(threading.Thread):
     name = ""
     id = 0
     
+    global printer
+
     running = False # Timers not running on startup, should run manually
+    reverse = False # Timers should not run backwards as default
     seconds = 0
+    
 
     def suspend(self):
         autoDump()
@@ -125,6 +140,18 @@ class Timer(threading.Thread):
     def toggle(self):
         self.running= 1 - self.running # this swaps the running variable 
 
+    def toggleReverse(self):
+        self.reverse= 1 - self.reverse
+    
+    def setReverse(self,reverse):
+        self.reverse= reverse
+
+    def getReverse(self): # dirty hack to display the reverse everywhere in the program 
+        if self.reverse == True:
+            return "R"
+        else:
+            return ""
+    
     def reset(self):
         self.seconds = 0    
     
@@ -145,19 +172,44 @@ class Timer(threading.Thread):
     def run(self):
         while True:
             if self.running == True:
-                self.seconds = self.seconds + 1
+                if self.reverse == True:
+                    self.seconds = self.seconds - 1
+                    if self.seconds  <= 0:
+                        self.running = False
+                        self.seconds = 0
+                        self.reverse = False
+                        try:
+                            if _ACTION_TIMER == True:
+                                _DEFAULT_ACTION_ON_TIMER_BELL()
+                            self.visualBell("BELL from [%s] BELL" % self.getText())
+                        except all as e:
+                            print e
+                            printer.suspend()
+                else:
+                    self.seconds = self.seconds + 1
                 time.sleep(1)
             else:
                 time.sleep(1)
 
+    def visualBell(self,str):
+        printer.suspend()
+        for i in range(_DEFAULT_BELL_TIME):
+            for each in range(3):
+                clear()
+                sys.stdout.write("%s%s\r" % (str , each*"!!"))
+                sys.stdout.flush()
+                time.sleep(0.5)
+        printer.resume()                               
+
     def getText(self):
-        return '#%d:%s %02d:%02d' % (self.id,self.name,(self.seconds/60.0),(self.seconds % 60))
+        return '#%s%d:%s %02d:%02d' % (self.getReverse(),self.id,self.name,(self.seconds/60.0),(self.seconds % 60))
 
     def setMinutes(self,minutesStr): # sets minutes as you think: 1:30 -> 1Minute 30Seconds
         if minutesStr:        
             try:
+                if "-" in minutesStr: # nah just positive values allowed
+                    raise(ValueError)
                 min, sec = minutesStr.split(":")
-
             except ValueError:
                 printer.suspend()
                 clear()
@@ -168,23 +220,26 @@ class Timer(threading.Thread):
                 return False
             self.seconds = int(float(min)*60)+int(sec) # sets the clock
             
-
     def getMinutes(self):
         return '%d:%d' % ((self.seconds/60.0),(self.seconds % 60))
 
-
-def dump(t,filename): # dumps all data to given file
+def log(log,filename): # only writes what it gets to file
     try:
-        f = open(filename,"a")
-        txt=""
-        for each in t:
-            txt+= "%s " % each.getText()
-        f.writelines("%s -> %s\n" % (time.ctime(),txt))
+        f = open(filename, "a")
+        f.writelines(log)
         f.close()
     except all as e:
         print e
         exit()
     
+def dump(t,filename): # dumps all data to given file
+        f = open(filename,"a")
+        txt=""
+        for each in t:
+            txt+= "%s " % each.getText()
+        txt =  "%s -> %s\n" % (time.ctime(),txt)
+        log(txt,filename) 
+
 def autoDump():
     if _AUTO_DUMP_ON_CHANGE == True:
        dump(t,_AUTO_DUMP_FILE[os.name]) # calls dump with the autodump path
@@ -194,7 +249,6 @@ def load(t,filename): # loads the las dump from spezified file
         f = open(filename,"r")
         lastline = f.readlines()[-1] # this will get only the last line
         data = lastline.split("->")[1].strip().split(" ") # skip the cdate format and get only the data in form '#1:noName','00:11',...,...
-
         i = 0
         for each in t:
             each.setName(data[i].split(":")[1]) # get name from string and set it for each timer
@@ -214,22 +268,23 @@ def load(t,filename): # loads the las dump from spezified file
         print e
         
 def fit(str=""): # try to set geometry, based on given str
-    if os.name == "nt":
-        if len(str) != 0:
-            lines = str.split("\n")
-            height = len(lines)
-            max = 0
-            for each in lines:
-                if len(each) > max:
-                    max = len(each)
-            width = max            
-            os.system("mode con cols=%d lines=%d" % (width,height))
-        else:
-            os.system("mode con cols=%d lines=%d" %(_DEFAULT_WIDTH,_DEFAULT_HEIGHT))
+    if _AUTO_RESIZE_WINDOW == True: 
+        if os.name == "nt":
+            if len(str) != 0:
+                lines = str.split("\n")
+                height = len(lines)
+                max = 0
+                for each in lines:
+                    if len(each) > max:
+                        max = len(each)
+                width = max            
+                os.system("mode con cols=%d lines=%d" % (width,height))
+            else:
+                os.system("mode con cols=%d lines=%d" %(_DEFAULT_WIDTH,_DEFAULT_HEIGHT))
 
-    elif os.name == "posix":
-        pass        
-        #os.system("clear")
+        elif os.name == "posix":
+            pass        
+            #os.system("clear")
         
 def clear():
     if os.name == "nt":
@@ -307,6 +362,7 @@ while True:
         for each in t:
             each.reset()
             each.suspend()
+            each.setReverse(0)
             each.setName(_DEFAULT_NAME_OF_TIMERS)
 
     elif cmd.startswith("ss"): # super stop stops all timers
@@ -317,6 +373,10 @@ while True:
         if cmd.startswith("ar"): # reset all timers
             for each in t:
                 each.reset()
+        elif cmd.startswith("ai"): # all timers run backwards
+            for each in t:
+                each.toggleReverse() 
+            autoDump()
         elif cmd.startswith("an"):
             printer.suspend()
             newName=raw_input("Set new name for all: ")
@@ -344,16 +404,25 @@ while True:
             if cmd.startswith("%sr" % each.id): #reset 1r, 2r ... + enter
                 each.reset()
 
+            
+            elif cmd.startswith("%si" % each.id): #inverse timer (run backwards)
+                each.toggleReverse()            
+                if each.reverse == True: # if reverse is True after toggle set new counter value
+                    printer.suspend()
+                    newVal=raw_input("Set val to count backwards for #%s%d %s: " % (each.getReverse(),each.id,each.getName()))
+                    each.setMinutes(newVal)
+                    printer.resume()
+
             elif cmd.startswith("%sn" % each.id): #set name 1n, 2n ... + enter
                 printer.suspend()
-                newName=raw_input("Set new Name for #%d %s: " % (each.id,each.getName()))
+                newName=raw_input("Set new Name for #%s%d %s: " % (each.getReverse(),each.id,each.getName()))
                 if len(newName) != 0:
                     each.setName(newName)
                 printer.resume()
 
             elif cmd.startswith("%ss" % each.id): #set timer 1s, 2s ... + enter
                 printer.suspend()
-                newVal=raw_input("Set new Value for #%d %s(%s): " % (each.id,each.getName(),each.getMinutes()))
+                newVal=raw_input("Set new Value for #%s%d %s(%s): " % (each.getReverse(),each.id,each.getName(),each.getMinutes()))
                 if len(newVal) != 0:
                     each.setMinutes(newVal)
                 printer.resume()            
