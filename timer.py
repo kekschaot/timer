@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-_VERSION = "0.9.3"
+_VERSION = "0.9.4"
 
 # USERCONFIG 
 _TIMERS_TO_SPAWN = 3      # How many timers you need? (values between 1-9)
