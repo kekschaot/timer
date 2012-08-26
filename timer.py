@@ -56,7 +56,6 @@ sss {enter} : aka super stop stops all timers and also set default name
 
 
 
-
 # PROGRAM BEGINS!
 import time
 import threading
