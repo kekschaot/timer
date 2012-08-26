@@ -19,7 +19,7 @@ _ERROR_DUMP_FILE = {"posix":"/tmp/timer.autodump","nt":"c:/timer.autodump"}
 _DEFAULT_HEIGHT= 1 # WINDOWS ONLY ATM
 _DEFAULT_WIDTH =100 # also only M$ Win
 
-_ACTION_TIMER = False # when this is set to true the default action will be called, else the timer bells visually 
+_ACTION_TIMER = True # when this is set to true the default action will be called, else the timer bells visually 
 _DEFAULT_BELL_TIME = 5
 
 def _DEFAULT_ACTION_ON_TIMER_BELL(): # 
@@ -409,12 +409,14 @@ while True:
                 each.toggleReverse()            
                 if each.reverse == True: # if reverse is True after toggle set new counter value
                     printer.suspend()
+                    clear()
                     newVal=raw_input("Set val to count backwards for #%s%d %s: " % (each.getReverse(),each.id,each.getName()))
                     each.setMinutes(newVal)
                     printer.resume()
 
             elif cmd.startswith("%sn" % each.id): #set name 1n, 2n ... + enter
                 printer.suspend()
+                clear()
                 newName=raw_input("Set new Name for #%s%d %s: " % (each.getReverse(),each.id,each.getName()))
                 if len(newName) != 0:
                     each.setName(newName)
@@ -422,6 +424,7 @@ while True:
 
             elif cmd.startswith("%ss" % each.id): #set timer 1s, 2s ... + enter
                 printer.suspend()
+                clear()
                 newVal=raw_input("Set new Value for #%s%d %s(%s): " % (each.getReverse(),each.id,each.getName(),each.getMinutes()))
                 if len(newVal) != 0:
                     each.setMinutes(newVal)
