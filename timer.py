@@ -17,9 +17,6 @@ _AUTO_DUMP_FILE = {"posix":"/tmp/timer.autodump","nt":"c:/timer.autodump"} # dum
 _DEFAULT_HEIGHT= 1 # WINDOWS ONLY ATM
 _DEFAULT_WIDTH =100 # also only M$ Win
 
-
-
-
 helpstr = """timer.py
 Version: %s
 by David Krause
@@ -52,6 +49,14 @@ ss {enter} : aka super stop stops all timers
 sss {enter} : aka super stop stops all timers and also set default name
 
 """ % _VERSION
+
+
+
+
+
+
+
+
 # PROGRAM BEGINS!
 import time
 import threading
