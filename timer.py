@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-_VERSION = "0.9.6"
-
+_VERSION = "0.9.8.1+config"
 
 import time
 import threading
@@ -8,6 +7,33 @@ import sys
 import os
 import getpass
 import re
+import ConfigParser
+
+DEFAULTS ={
+"TIMERS_TO_SPAWN" : 1 ,     # How many timers you need? (values between 1-9)
+"DEFAULT_NAME_OF_TIMERS" : "noName" ,# the default name of the timers (can change it later)
+"DEFAULT_DUMP_FILE_NAME" : {"posix":"/tmp/timer.dump","nt":"./timer.dump"}, # the default file for dumping each timer posix:linux,unix,etc nt:windows
+"VERTICAL" : False, # False/True if this is True the timers are shown vertical istead of horizontal
+"REFRESH_RATE" : 1 ,# Seconds to sleep between the refresh could also eg. 0.5, 0.25, 0.1, ...
+"AUTO_RESIZE_WINDOW" : True, # this currently works only on NT / WINDOWS
+
+# ativates the autodump on every aktion on the timers.
+# HINT hit {enter} in the program will dump the current state of the timers
+"AUTO_DUMP_ON_CHANGE" : True, # True aktivates the AUTO DUMP
+"AUTO_DUMP_FILE" : {"posix":"/tmp/timer.autodump","nt":"./timer.autodump"}, # dump path
+
+"ERROR_DUMP_FILE" : {"posix":"/tmp/timer.autodump","nt":"./timer.errordump"},
+
+"DEFAULT_HEIGHT": 1, # WINDOWS ONLY ATM
+"DEFAULT_WIDTH" :100, # also only M$ Win
+"DEFAULT_COLOR" : "A", # and also only M$ Win (color "A" is a hackisch matrix green)
+
+"ACTION_TIMER" : True, # when this is set to true the default action will be called, else the timer bells visually
+"DEFAULT_BELL_TIME" : 5,    
+
+}
+
+config = ConfigParser.ConfigParser(DEFAULTS)
 
 # USERCONFIG
 _TIMERS_TO_SPAWN = 1      # How many timers you need? (values between 1-9)
@@ -30,6 +56,8 @@ _DEFAULT_COLOR = "A" # and also only M$ Win (color "A" is a hackisch matrix gree
 
 _ACTION_TIMER = True # when this is set to true the default action will be called, else the timer bells visually
 _DEFAULT_BELL_TIME = 5
+
+_SPACE_TO_WRITE = '#'*10
 
 def _DEFAULT_ACTION_ON_TIMER_BELL(): #
 
@@ -82,12 +110,12 @@ b {enter}   : remove the last timer
 
 """ % _VERSION
 
-
 # PROGRAM BEGINS!
+def raw_input_fit(prompt):
+    fit(prompt+_SPACE_TO_WRITE)
+    newName=raw_input(prompt)
+    return newName
 
-#os.name = "nt" # DEBUG simulate nt
-
-shutdown = False # All threads will check this global variable and shuts down when it's set to True
 
 def setColor(color):
     if os.name == "nt":
@@ -340,9 +368,6 @@ def clear():
     elif os.name == "posix":
         os.system("clear")
 
-
-
-
 # COMMAND LINE PARSING
 # At first look if help is aquired on startup
 if ('-h' in sys.argv) or ('--help' in sys.argv) or ('/?' in sys.argv):
@@ -395,7 +420,7 @@ while True:
     elif cmd.startswith("c"):
         printer.suspend()
         fit("set color to? (default %s)  " % _DEFAULT_COLOR)
-        setColor(raw_input("set color to? (default %s):" % _DEFAULT_COLOR))
+        setColor(raw_input_fit("set color to? (default %s):" % _DEFAULT_COLOR))
         printer.resume()
     
     elif cmd.startswith("p"): # toggle printer
@@ -419,7 +444,7 @@ while True:
 
     elif cmd.startswith("d"): # dump to given file
         printer.suspend()
-        new_filename = raw_input("dump to [%s]: " % _DEFAULT_DUMP_FILE_NAME[os.name] )
+        new_filename = raw_input_fit("dump to [%s]: " % _DEFAULT_DUMP_FILE_NAME[os.name] )
         if len(new_filename) == 0:
             dump(timers,_DEFAULT_DUMP_FILE_NAME[os.name])
         else:
@@ -428,7 +453,7 @@ while True:
 
     elif cmd.startswith("l"): # load from the last line
         printer.suspend()
-        new_filename = raw_input("load last line from [%s]: " % _DEFAULT_DUMP_FILE_NAME[os.name] )
+        new_filename = raw_input_fit("load last line from [%s]: " % _DEFAULT_DUMP_FILE_NAME[os.name] )
         if len(new_filename) == 0:
             load(timers,_DEFAULT_DUMP_FILE_NAME[os.name])
         else:
@@ -460,7 +485,7 @@ while True:
             autoDump()
         elif cmd.startswith("an"):
             printer.suspend()
-            newName=raw_input("Set new name for all: ")
+            newName=raw_input_fit( "Set new name for all: ")
             if len(newName) != 0:
                 for each in timers:
                     each.setName(newName)
@@ -468,7 +493,7 @@ while True:
             autoDump()
         elif cmd.startswith("as"):
             printer.suspend()
-            newVal=raw_input("Set new Value for all: ")
+            newVal=raw_input_fit("Set new Value for all: ")
             if len(newVal) != 0:
                 for each in timers:
                     sucess = each.setMinutes(newVal)
@@ -498,7 +523,7 @@ while True:
                 if each.reverse == True: # if reverse is True after toggle set new counter value
                     printer.suspend()
                     clear()
-                    newVal=raw_input("Set val to count backwards for #%s%d %s: " % (each.getReverse(),each.id,each.getName()))
+                    newVal=raw_input_fit("Set val to count backwards for #%s%d %s: " % (each.getReverse(),each.id,each.getName()))
                     each.setMinutes(newVal)
                     printer.resume()
 
@@ -506,7 +531,7 @@ while True:
                 """ Set name for n'th counter """
                 printer.suspend()
                 clear()
-                newName=raw_input("Set new Name for #%s%d %s: " % (each.getReverse(),each.id,each.getName()))
+                newName=raw_input_fit("Set new Name for #%s%d %s: " % (each.getReverse(),each.id,each.getName()))
                 if len(newName) != 0:
                     each.setName(newName)
                 printer.resume()
@@ -515,12 +540,11 @@ while True:
                 """ Set new value vor counter """   
                 printer.suspend()
                 clear()
-                newVal=raw_input("Set new Value for #%s%d %s(%s): " % (each.getReverse(),each.id,each.getName(),each.getMinutes()))
+                newVal=raw_input_fit("Set new Value for #%s%d %s(%s): " % (each.getReverse(),each.id,each.getName(),each.getMinutes()))
                 if len(newVal) != 0:
                     each.setMinutes(newVal)
                 printer.resume()
 
             elif cmd.startswith(str(each.id)): # set running 1,2,3... + enter
                 """ Toggle timers eg: number <enter> """
-                each.toggle() # this swaps the running variable
-    #time.sleep(0.5) # time to sleep between each command
+                each.toggle() # this swaps the running variables
